@@ -3242,6 +3242,23 @@ void label::serialize( JsonOut &json ) const
     json.end_object();
 }
 
+void vehicle::fuel_consumption_data::deserialize( const JsonObject &data )
+{
+    data.allow_omitted_members();
+    data.read( "fuel_per_sec", fuel_per_sec );
+    data.read( "total_fuel", total_fuel );
+    data.read( "fuel_consumption_dirty", fuel_consumption_dirty );
+}
+
+void vehicle::fuel_consumption_data::serialize( JsonOut &json ) const
+{
+    json.start_object();
+    json.member( "fuel_per_sec", fuel_per_sec );
+    json.member( "total_fuel", total_fuel );
+    json.member( "fuel_consumption_dirty", fuel_consumption_dirty );
+    json.end_object();
+}
+
 void smart_controller_config::deserialize( const JsonObject &data )
 {
     data.allow_omitted_members();
@@ -3299,6 +3316,8 @@ void vehicle::deserialize( const JsonObject &data )
     if( !data.read( "last_update_turn", last_update ) ) {
         last_update = calendar::turn;
     }
+
+    data.read( "fuel_used", fuel_used );
 
     units::angle fdir_angle = units::from_degrees( fdir );
     face.init( fdir_angle );
@@ -3483,7 +3502,7 @@ void vehicle::serialize( JsonOut &json ) const
         }
     }
     json.member( "other_tow_point", other_tow_temp_point );
-
+    json.member( "fuel_used", fuel_used );
     json.member( "is_locked", is_locked );
     json.member( "is_alarm_on", is_alarm_on );
     json.member( "camera_on", camera_on );

@@ -746,6 +746,8 @@ class vehicle
             unsigned int total_fuel = 0;
             //"dirty bit" for counting fuel consumption of both generators and engines
             bool fuel_consumption_dirty = false;
+            void deserialize( const JsonObject &data );
+            void serialize( JsonOut &json ) const;
         };
         std::map<itype_id, fuel_consumption_data> fuel_used;
 
