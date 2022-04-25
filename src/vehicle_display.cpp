@@ -383,7 +383,7 @@ void vehicle::print_fuel_indicators( const catacurses::window &win, const point 
 
     for( int i = start_index; i < max_size; i++ ) {
         const itype_id &f = fuels[i];
-        print_fuel_indicator(win, p + point(0, yofs), f, verbose, desc);
+        print_fuel_indicator( win, p + point( 0, yofs ), f, verbose, desc );
         yofs++;
     }
 
@@ -428,10 +428,10 @@ void vehicle::print_fuel_indicator( const catacurses::window &win, const point &
     }
     if( verbose ) {
         std::map<itype_id, fuel_consumption_data> fuel_use = get_fuel_used();
-        auto fuel_data = fuel_use.find(fuel_type);
+        auto fuel_data = fuel_use.find( fuel_type );
         int rate = 0;
         std::string units;
-        if (fuel_data != fuel_use.end()) {
+        if( fuel_data != fuel_use.end() ) {
             rate = consumption_per_hour( fuel_type, fuel_data->second );
             units = _( "mL" );
         }

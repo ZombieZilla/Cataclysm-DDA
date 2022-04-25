@@ -152,7 +152,7 @@ static const activity_id ACT_SKIN( "ACT_SKIN" );
 static const activity_id ACT_SOCIALIZE( "ACT_SOCIALIZE" );
 static const activity_id ACT_SPELLCASTING( "ACT_SPELLCASTING" );
 static const activity_id ACT_START_ENGINES( "ACT_START_ENGINES" );
-static const activity_id ACT_START_GENERATORS("ACT_START_GENERATORS");
+static const activity_id ACT_START_GENERATORS( "ACT_START_GENERATORS" );
 static const activity_id ACT_START_FIRE( "ACT_START_FIRE" );
 static const activity_id ACT_STUDY_SPELL( "ACT_STUDY_SPELL" );
 static const activity_id ACT_TIDY_UP( "ACT_TIDY_UP" );
@@ -2011,19 +2011,19 @@ void activity_handlers::vibe_do_turn( player_activity *act, Character *you )
 void activity_handlers::start_engines_finish( player_activity *act, Character *you )
 {
 
-    activity_handlers::start_motors_finish(act, you, false);
+    activity_handlers::start_motors_finish( act, you, false );
 
 }
 
-void activity_handlers::start_generators_finish(player_activity * act, Character* you)
+void activity_handlers::start_generators_finish( player_activity *act, Character *you )
 {
 
-    activity_handlers::start_motors_finish(act, you, true);
+    activity_handlers::start_motors_finish( act, you, true );
 
 }
 
-void activity_handlers::start_motors_finish(player_activity * act, Character * you,
-    const bool for_generators)
+void activity_handlers::start_motors_finish( player_activity *act, Character *you,
+        const bool for_generators )
 {
     act->set_to_null();
     // Find the vehicle by looking for a remote vehicle first, then by player relative coordinates
@@ -2047,11 +2047,11 @@ void activity_handlers::start_motors_finish(player_activity * act, Character * y
     int non_combustion_started = 0;
     const bool take_control = act->values[0];
 
-    for (size_t e = 0; e < motors.size(); ++e) {
-        if (veh->is_engine_on(e, for_generators)) {
+    for( size_t e = 0; e < motors.size(); ++e ) {
+        if( veh->is_engine_on( e, for_generators ) ) {
             attempted++;
-            if (!veh->is_engine_type(e, itype_muscle, for_generators) &&
-                !veh->is_engine_type(e, itype_animal, for_generators)) {
+            if( !veh->is_engine_type( e, itype_muscle, for_generators ) &&
+                !veh->is_engine_type( e, itype_animal, for_generators ) ) {
                 non_muscle_attempted++;
             }
             if( veh->start_engine( e, for_generators ) ) {
@@ -2067,10 +2067,9 @@ void activity_handlers::start_motors_finish(player_activity * act, Character * y
     }
 
     //Did any engines start?
-    if (for_generators) {
+    if( for_generators ) {
         veh->generator_on = started;
-    }
-    else {
+    } else {
         veh->engine_on = started;
     }
     //init working engine noise
