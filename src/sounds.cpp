@@ -862,7 +862,7 @@ void sfx::do_vehicle_engine_sfx()
     } else {
         return;
     }
-    if( !veh->engine_on ) {
+    if (!veh->engine_on && !veh->generator_on) {
         fade_audio_channel( ch, 100 );
         add_msg_debug( debugmode::DF_SOUND, "STOP interior_engine_sound" );
         return;
@@ -874,23 +874,11 @@ void sfx::do_vehicle_engine_sfx()
     const bool indoors = !is_creature_outside( player_character );
     const bool night = is_night( calendar::turn );
 
-    for( size_t e = 0; e < veh->engines.size(); ++e ) {
-        if( veh->is_engine_on( e ) ) {
-            if( sfx::has_variant_sound( "engine_working_internal",
-                                        veh->part_info( veh->engines[ e ] ).get_id().str(),
-                                        seas_str, indoors, night ) ) {
-                id_and_variant = std::make_pair( "engine_working_internal",
-                                                 veh->part_info( veh->engines[ e ] ).get_id().str() );
-            } else if( veh->is_engine_type( e, fuel_type_muscle ) ) {
-                id_and_variant = std::make_pair( "engine_working_internal", "muscle" );
-            } else if( veh->is_engine_type( e, fuel_type_wind ) ) {
-                id_and_variant = std::make_pair( "engine_working_internal", "wind" );
-            } else if( veh->is_engine_type( e, fuel_type_battery ) ) {
-                id_and_variant = std::make_pair( "engine_working_internal", "electric" );
-            } else {
-                id_and_variant = std::make_pair( "engine_working_internal", "combustion" );
-            }
-        }
+    if (veh->engine_on) {
+        id_and_variant = get_engine_sound("engine_working_internal", veh, false);
+    }
+    else {
+        id_and_variant = get_engine_sound("engine_working_internal", veh, true);
     }
 
     if( !is_channel_playing( ch ) ) {
@@ -900,6 +888,10 @@ void sfx::do_vehicle_engine_sfx()
         add_msg_debug( debugmode::DF_SOUND, "START %s %s", id_and_variant.first, id_and_variant.second );
     } else {
         add_msg_debug( debugmode::DF_SOUND, "PLAYING" );
+    }
+
+    if (!veh->engine_on) {
+        return;
     }
     int current_speed = veh->velocity;
     bool in_reverse = false;
@@ -1017,23 +1009,11 @@ void sfx::do_vehicle_exterior_engine_sfx()
     const bool indoors = !is_creature_outside( player_character );
     const bool night = is_night( calendar::turn );
 
-    for( size_t e = 0; e < veh->engines.size(); ++e ) {
-        if( veh->is_engine_on( e ) ) {
-            if( sfx::has_variant_sound( "engine_working_external",
-                                        veh->part_info( veh->engines[ e ] ).get_id().str(),
-                                        seas_str, indoors, night ) ) {
-                id_and_variant = std::make_pair( "engine_working_external",
-                                                 veh->part_info( veh->engines[ e ] ).get_id().str() );
-            } else if( veh->is_engine_type( e, fuel_type_muscle ) ) {
-                id_and_variant = std::make_pair( "engine_working_external", "muscle" );
-            } else if( veh->is_engine_type( e, fuel_type_wind ) ) {
-                id_and_variant = std::make_pair( "engine_working_external", "wind" );
-            } else if( veh->is_engine_type( e, fuel_type_battery ) ) {
-                id_and_variant = std::make_pair( "engine_working_external", "electric" );
-            } else {
-                id_and_variant = std::make_pair( "engine_working_external", "combustion" );
-            }
-        }
+    if (veh->engine_on) {
+        id_and_variant = get_engine_sound("engine_working_external", veh, false);
+    }
+    else {
+        id_and_variant = get_engine_sound("engine_working_external", veh, true);
     }
 
     if( is_channel_playing( ch ) ) {
@@ -1066,6 +1046,38 @@ void sfx::do_vehicle_exterior_engine_sfx()
                        id_and_variant.first,
                        id_and_variant.second, vol, Mix_Volume( ch_int, -1 ) );
     }
+}
+
+std::pair<std::string, std::string> sfx::get_engine_sound(std::string variant_sound,
+    vehicle* veh, bool for_generators)
+{
+    const std::vector<int> motors = for_generators ? veh->generators : veh->engines;
+
+    std::pair<std::string, std::string> id_and_variant;
+
+    for (size_t e = 0; e < motors.size(); ++e) {
+        if (veh->is_engine_on(e, for_generators)) {
+            if (sfx::has_variant_sound(variant_sound,
+                veh->part_info(motors[e]).get_id().str())) {
+                id_and_variant = std::make_pair(variant_sound,
+                    veh->part_info(motors[e]).get_id().str());
+            }
+            else if (veh->is_engine_type(e, fuel_type_muscle, for_generators)) {
+                id_and_variant = std::make_pair(variant_sound, "muscle");
+            }
+            else if (veh->is_engine_type(e, fuel_type_wind, for_generators)) {
+                id_and_variant = std::make_pair(variant_sound, "wind");
+            }
+            else if (veh->is_engine_type(e, fuel_type_battery, for_generators)) {
+                id_and_variant = std::make_pair(variant_sound, "electric");
+            }
+            else {
+                id_and_variant = std::make_pair(variant_sound, "combustion");
+            }
+        }
+    }
+
+    return id_and_variant;
 }
 
 void sfx::do_ambient()
@@ -1921,6 +1933,10 @@ void sfx::do_footstep() { }
 void sfx::do_danger_music() { }
 void sfx::do_vehicle_engine_sfx() { }
 void sfx::do_vehicle_exterior_engine_sfx() { }
+std::pair<std::string, std::string> sfx::get_engine_sound(std::string, vehicle*, bool)
+{
+    return { std::string(), std::string() };
+}
 void sfx::do_ambient() { }
 void sfx::fade_audio_group( group, int ) { }
 void sfx::fade_audio_channel( channel, int ) { }

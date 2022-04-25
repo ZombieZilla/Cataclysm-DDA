@@ -231,6 +231,8 @@ void robot_control_finish( player_activity *act, Character *you );
 void socialize_finish( player_activity *act, Character *you );
 void spellcasting_finish( player_activity *act, Character *you );
 void start_engines_finish( player_activity *act, Character *you );
+void start_generators_finish(player_activity* act, Character* you);
+void start_motors_finish(player_activity* act, Character* you, bool for_generators);
 void start_fire_finish( player_activity *act, Character *you );
 void study_spell_finish( player_activity *act, Character *you );
 void teach_finish( player_activity *act, Character *you );

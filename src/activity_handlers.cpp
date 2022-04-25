@@ -152,6 +152,7 @@ static const activity_id ACT_SKIN( "ACT_SKIN" );
 static const activity_id ACT_SOCIALIZE( "ACT_SOCIALIZE" );
 static const activity_id ACT_SPELLCASTING( "ACT_SPELLCASTING" );
 static const activity_id ACT_START_ENGINES( "ACT_START_ENGINES" );
+static const activity_id ACT_START_GENERATORS("ACT_START_GENERATORS");
 static const activity_id ACT_START_FIRE( "ACT_START_FIRE" );
 static const activity_id ACT_STUDY_SPELL( "ACT_STUDY_SPELL" );
 static const activity_id ACT_TIDY_UP( "ACT_TIDY_UP" );
@@ -295,6 +296,7 @@ activity_handlers::finish_functions = {
     { ACT_PLANT_SEED, plant_seed_finish },
     { ACT_VEHICLE, vehicle_finish },
     { ACT_START_ENGINES, start_engines_finish },
+    { ACT_START_GENERATORS, start_generators_finish },
     { ACT_PULP, pulp_finish },
     { ACT_REPAIR_ITEM, repair_item_finish },
     { ACT_HEATING, heat_item_finish },
@@ -2008,6 +2010,21 @@ void activity_handlers::vibe_do_turn( player_activity *act, Character *you )
 
 void activity_handlers::start_engines_finish( player_activity *act, Character *you )
 {
+
+    activity_handlers::start_motors_finish(act, you, false);
+
+}
+
+void activity_handlers::start_generators_finish(player_activity * act, Character* you)
+{
+
+    activity_handlers::start_motors_finish(act, you, true);
+
+}
+
+void activity_handlers::start_motors_finish(player_activity * act, Character * you,
+    const bool for_generators)
+{
     act->set_to_null();
     // Find the vehicle by looking for a remote vehicle first, then by player relative coordinates
     vehicle *veh = g->remoteveh();
@@ -2018,7 +2035,10 @@ void activity_handlers::start_engines_finish( player_activity *act, Character *y
         if( !veh ) {
             return;
         }
+
     }
+    const std::vector<int> motors = for_generators ? veh->generators : veh->engines;
+
 
     int attempted = 0;
     int non_muscle_attempted = 0;
@@ -2027,17 +2047,17 @@ void activity_handlers::start_engines_finish( player_activity *act, Character *y
     int non_combustion_started = 0;
     const bool take_control = act->values[0];
 
-    for( size_t e = 0; e < veh->engines.size(); ++e ) {
-        if( veh->is_engine_on( e ) ) {
+    for (size_t e = 0; e < motors.size(); ++e) {
+        if (veh->is_engine_on(e, for_generators)) {
             attempted++;
-            if( !veh->is_engine_type( e, itype_muscle ) &&
-                !veh->is_engine_type( e, itype_animal ) ) {
+            if (!veh->is_engine_type(e, itype_muscle, for_generators) &&
+                !veh->is_engine_type(e, itype_animal, for_generators)) {
                 non_muscle_attempted++;
             }
-            if( veh->start_engine( e ) ) {
+            if( veh->start_engine( e, for_generators ) ) {
                 started++;
-                if( !veh->is_engine_type( e, itype_muscle ) &&
-                    !veh->is_engine_type( e, itype_animal ) ) {
+                if( !veh->is_engine_type( e, itype_muscle, for_generators ) &&
+                    !veh->is_engine_type( e, itype_animal, for_generators ) ) {
                     non_muscle_started++;
                 } else {
                     non_combustion_started++;
@@ -2047,7 +2067,12 @@ void activity_handlers::start_engines_finish( player_activity *act, Character *y
     }
 
     //Did any engines start?
-    veh->engine_on = started;
+    if (for_generators) {
+        veh->generator_on = started;
+    }
+    else {
+        veh->engine_on = started;
+    }
     //init working engine noise
     sfx::do_vehicle_engine_sfx();
 
