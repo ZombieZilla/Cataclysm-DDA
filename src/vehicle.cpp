@@ -119,6 +119,7 @@ static const vproto_id vehicle_prototype_none( "none" );
 static const zone_type_id zone_type_VEHICLE_PATROL( "VEHICLE_PATROL" );
 
 static const std::string flag_E_COMBUSTION( "E_COMBUSTION" );
+static const std::string flag_GENERATOR("GENERATOR");
 
 static const std::string flag_APPLIANCE( "APPLIANCE" );
 
@@ -1062,6 +1063,11 @@ bool vehicle::is_engine_type( const int e, const itype_id &ft, bool for_generato
 bool vehicle::is_combustion_engine_type( const int e ) const
 {
     return parts[engines[e]].info().has_flag( flag_E_COMBUSTION );
+}
+
+bool vehicle::is_generator_type(const int e) const
+{
+    return parts[generators[e]].info().has_flag(flag_GENERATOR);
 }
 
 bool vehicle::is_perpetual_type( const int e, bool for_generators ) const

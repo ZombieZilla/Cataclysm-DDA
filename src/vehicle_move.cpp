@@ -121,11 +121,12 @@ int vehicle::slowdown( int at_velocity ) const
     return std::max( 1, slowdown );
 }
 
-void vehicle::smart_controller_handle_turn( bool thrusting,
+void vehicle::smart_controller_handle_turn( bool for_generators, bool thrusting,
         const cata::optional<float> &k_traction_cache )
 {
+    //const std::vector<int> motors = for_generators ? generators : engines;
 
-    if( !engine_on || !has_enabled_smart_controller ) {
+    if( (!engine_on || !generator_on) || !has_enabled_smart_controller ) {
         smart_controller_state = cata::nullopt;
         return;
     }
@@ -136,19 +137,21 @@ void vehicle::smart_controller_handle_turn( bool thrusting,
 
     // controlled engines
     // note: contains indices of of elements in `engines` array, not the part ids
-    std::vector<int> c_engines;
-    for( int i = 0; i < static_cast<int>( engines.size() ); ++i ) {
-        if( ( is_engine_type( i, fuel_type_battery ) || is_combustion_engine_type( i ) ) &&
-            ( ( parts[ engines[ i ] ].is_available() && engine_fuel_left( i ) > 0 ) ||
-              is_part_on( engines[ i ] ) ) ) {
-            c_engines.push_back( i );
+    std::vector<int> c_motors = for_generators ? generators : engines;
+    for( int i = 0; i < static_cast<int>(generators.size() ); ++i )
+    {
+        if( ( is_engine_type( i, fuel_type_battery, for_generators) || ( is_combustion_engine_type( i ) ||
+            is_generator_type( i ) ) ) && 
+          ( ( parts[generators[ i ] ].is_available() && engine_fuel_left( i, false, for_generators) > 0 ) ||
+             is_part_on(generators[ i ] ) ) ) {
+        c_motors.push_back( i );
         }
     }
 
     bool rotorcraft = is_flying && is_rotorcraft();
 
     Character &player_character = get_player_character();
-    if( rotorcraft || c_engines.size() <= 1 || c_engines.size() > 5 ) { // bail and shut down
+    if( rotorcraft ) {//|| c_motors.size() <= 1 || c_motors.size() > 5 ) { // bail and shut down
         for( const vpart_reference &vp : get_avail_parts( "SMART_ENGINE_CONTROLLER" ) ) {
             vp.part().enabled = false;
         }
@@ -156,12 +159,12 @@ void vehicle::smart_controller_handle_turn( bool thrusting,
         if( player_in_control( player_character ) ) {
             if( rotorcraft ) {
                 add_msg( _( "Smart controller does not support flying vehicles." ) );
-            } else if( c_engines.size() <= 1 ) {
-                add_msg( _( "Smart controller detects only a single controllable engine." ) );
-                add_msg( _( "Smart controller is designed to control more than one engine." ) );
-            } else {
-                add_msg( _( "Smart controller does not support more than five engines." ) );
-            }
+            }// else if( c_motors.size() <= 1 ) {
+             //   add_msg( _( "Smart controller detects only a single controllable engine." ) );
+             //   add_msg( _( "Smart controller is designed to control more than one engine." ) );
+            //} else {
+              //  add_msg( _( "Smart controller does not support more than five engines." ) );
+           // }
             add_msg( m_bad, _( "Smart controller is shutting down." ) );
         }
         has_enabled_smart_controller = false;
@@ -225,11 +228,11 @@ void vehicle::smart_controller_handle_turn( bool thrusting,
                             opt_accel ) )  / std::max( opt_accel, 1 );
     float cur_load_alternator = std::min( 0.01f, static_cast<float>( alternator_load_engines ) / 1000 );
 
-    for( size_t i = 0; i < c_engines.size(); ++i ) {
-        if( is_engine_on( c_engines[i] ) ) {
+    for( size_t i = 0; i < c_motors.size(); ++i ) {
+        if( is_engine_on( c_motors[i], for_generators) ) {
             prev_mask |= 1 << i;
-            bool is_electric = is_engine_type( c_engines[i], fuel_type_battery );
-            int fu = engine_fuel_usage( c_engines[i] ) * ( cur_load_approx + ( is_electric ? 0 :
+            bool is_electric = is_engine_type( c_motors[i], fuel_type_battery, for_generators);
+            int fu = engine_fuel_usage( c_motors[i], for_generators) * ( cur_load_approx + ( is_electric ? 0 :
                      cur_load_alternator ) );
             opt_fuel_usage += fu;
             if( is_electric ) {
@@ -263,19 +266,19 @@ void vehicle::smart_controller_handle_turn( bool thrusting,
     }
 
     // trying all combinations of engine state (max 31 iterations for 5 engines)
-    for( int mask = 1; mask < static_cast<int>( 1 << c_engines.size() ); ++mask ) {
+    for( int mask = 1; mask < static_cast<int>( 1 << c_motors.size() ); ++mask ) {
         if( mask == prev_mask ) {
             continue;
         }
 
         bool gas_engine_to_shut_down = false;
-        for( size_t i = 0; i < c_engines.size(); ++i ) {
+        for( size_t i = 0; i < c_motors.size(); ++i ) {
             bool old_state = ( prev_mask & ( 1 << i ) ) != 0;
             bool new_state = ( mask & ( 1 << i ) ) != 0;
             // switching enabled flag temporarily to perform calculations below
-            toggle_specific_engine( c_engines[i], new_state );
+            toggle_specific_engine( c_motors[i], new_state, for_generators);
 
-            if( old_state && !new_state && !is_engine_type( c_engines[i], fuel_type_battery ) ) {
+            if( old_state && !new_state && !is_engine_type( c_motors[i], fuel_type_battery, for_generators) ) {
                 gas_engine_to_shut_down = true;
             }
         }
@@ -293,9 +296,9 @@ void vehicle::smart_controller_handle_turn( bool thrusting,
         float load_approx_alternator = std::min( 0.01f,
                                        static_cast<float>( alternator_load_engines ) / 1000 );
 
-        for( int e : c_engines ) {
-            bool is_electric = is_engine_type( e, fuel_type_battery );
-            int fu = engine_fuel_usage( e ) * ( load_approx + ( is_electric ? 0 : load_approx_alternator ) );
+        for( int e : c_motors ) {
+            bool is_electric = is_engine_type( e, fuel_type_battery, for_generators);
+            int fu = engine_fuel_usage( e, for_generators) * ( load_approx + ( is_electric ? 0 : load_approx_alternator ) );
             fuel_usage += fu;
             if( is_electric ) {
                 net_echarge_rate -= fu;
@@ -333,27 +336,27 @@ void vehicle::smart_controller_handle_turn( bool thrusting,
         }
     }
 
-    for( size_t i = 0; i < c_engines.size(); ++i ) { // return to prev state
-        toggle_specific_engine( c_engines[i], static_cast<bool>( prev_mask & ( 1 << i ) ) );
+    for( size_t i = 0; i < c_motors.size(); ++i ) { // return to prev state
+        toggle_specific_engine( c_motors[i], static_cast<bool>( prev_mask & ( 1 << i ) ), for_generators);
     }
 
     if( opt_mask != prev_mask ) { // we found new configuration
         bool failed_to_start = false;
         bool turned_on_gas_engine = false;
-        for( size_t i = 0; i < c_engines.size(); ++i ) {
+        for( size_t i = 0; i < c_motors.size(); ++i ) {
             // ..0.. < ..1..  was off, new state on
             if( ( prev_mask & ( 1 << i ) ) < ( opt_mask & ( 1 << i ) ) ) {
-                if( !start_engine( c_engines[i], true, false ) ) {
+                if( !start_engine( c_motors[i], true, for_generators) ) {
                     failed_to_start = true;
                 }
-                turned_on_gas_engine |= !is_engine_type( c_engines[i], fuel_type_battery );
+                turned_on_gas_engine |= !is_engine_type( c_motors[i], fuel_type_battery, for_generators);
             }
         }
         if( failed_to_start ) {
             this->smart_controller_state = cata::nullopt;
 
-            for( size_t i = 0; i < c_engines.size(); ++i ) { // return to prev state
-                toggle_specific_engine( c_engines[i], static_cast<bool>( prev_mask & ( 1 << i ) ) );
+            for( size_t i = 0; i < c_motors.size(); ++i ) { // return to prev state
+                toggle_specific_engine( c_motors[i], static_cast<bool>( prev_mask & ( 1 << i ) ), for_generators);
             }
             for( const vpart_reference &vp : get_avail_parts( "SMART_ENGINE_CONTROLLER" ) ) {
                 vp.part().enabled = false;
@@ -365,10 +368,10 @@ void vehicle::smart_controller_handle_turn( bool thrusting,
             has_enabled_smart_controller = false;
 
         } else {  //successfully changed engines state
-            for( size_t i = 0; i < c_engines.size(); ++i ) {
+            for( size_t i = 0; i < c_motors.size(); ++i ) {
                 // was on, needs to be off
                 if( ( prev_mask & ( 1 << i ) ) > ( opt_mask & ( 1 << i ) ) ) {
-                    start_engine( c_engines[i], false, false );
+                    start_engine( c_motors[i], false, for_generators);
                 }
             }
             if( turned_on_gas_engine ) {

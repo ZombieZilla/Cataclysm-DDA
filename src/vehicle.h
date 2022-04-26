@@ -1504,7 +1504,7 @@ class vehicle
          * @param thrusting must be true when called from vehicle::thrust and vehicle is thrusting
          * @param k_traction_cache cached value of vehicle::k_traction, if empty, will be computed
          */
-        void smart_controller_handle_turn( bool thrusting = false,
+        void smart_controller_handle_turn( bool for_generators = true, bool thrusting = false,
                                            const cata::optional<float> &k_traction_cache = cata::nullopt );
 
         //deceleration due to ground friction and air resistance
@@ -1773,6 +1773,8 @@ class vehicle
         bool is_engine_type( int e, const itype_id &ft, bool for_generators = false ) const;
         //returns whether the engine uses one of specific "combustion" fuel types (gas, diesel and diesel substitutes)
         bool is_combustion_engine_type( int e ) const;
+        //returns whether the generator uses one of specific "combustion" fuel types (gas, diesel and diesel substitutes)
+        bool is_generator_type(int e) const;
         //returns whether the alternator on vehicle is operational
         bool is_alternator_on( int a ) const;
         //returns whether the alternator mounted on collection of parts is operational
