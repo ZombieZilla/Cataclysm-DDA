@@ -1,0 +1,33 @@
+[
+    {
+      "abstract": "vehicle_generator",
+      "type": "ENGINE",
+      "name": { "str": "vehicle generator" },
+      "category": "veh_parts",
+      "color": "light_red",
+      "symbol": "G",
+      "material": [ "iron" ]
+    },
+    {
+        "id": "generator_portable_7500w",
+        "copy-from": "vehicle_generator",
+        "type": "ENGINE",
+        "name": { "str": "portable generator" },
+        "description": "FIXME TODO UPDATEME",
+        "weight": "88 kg",
+        "volume": "300L",
+        "price": 105000,
+        "price_postapoc": 5000,
+        "displacement": 420,
+        "pocket_data": [
+            {
+              "pocket_type": "CONTAINER",
+              "rigid": true,
+              "watertight": true,
+              "max_contains_volume": "25 L",
+              "max_item_volume": "50 ml",
+              "max_contains_weight": "30 kg"
+            }
+          ]
+    }
+]

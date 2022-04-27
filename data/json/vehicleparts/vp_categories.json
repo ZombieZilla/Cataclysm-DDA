@@ -36,7 +36,7 @@
     "type": "vehicle_part_category",
     "name": { "ctxt": "vp_category", "str": "Electric Generation" },
     "short_name": { "ctxt": "vp_category", "str": "G" },
-    "//": "Vehicle part category for solar panels, reactors, dashboards and ECUs, batteries, alternators.",
+    "//": "Vehicle part category for solar panels, reactors, dashboards and ECUs, batteries, alternators, generators.",
     "priority": 30
   },
   {

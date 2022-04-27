@@ -67,6 +67,15 @@
       { "x": -1, "y": 1, "parts": [ "wheel", "muffler" ] }
     ]
   },
+  { 
+    "id": "TEST_GENERATOR",
+    "type": "vehicle",
+    "name": "TEST_GENERATOR",
+    "blueprint": [ [ "X" ] ],
+    "parts": [
+      { "x": 0, "y": 0, "parts": [ "frame_cross", "portable_generator", "battery_car", "controls", { "part": "tank_small", "fuel": "gasoline" } ] }
+    ]
+  },
   {
     "id": "portable_generator",
     "type": "vehicle",

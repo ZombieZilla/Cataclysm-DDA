@@ -1,5 +1,37 @@
 [
     {
+        "abstract": "vehicle_generator",
+        "copy-from": "gasoline_engine",
+        "type": "vehicle_part",
+        "categories": [ "energy" ],
+        "color": "light_red",
+        "symbol": "G",
+        "description": "A generator.",
+        "extend": { "flags": [ "GENERATOR", "OBSTACLE" ] },
+        "delete": { "flags": [ "E_HIGHER_SKILL", "ENGINE", "E_HEATER", "E_ALTERNATOR" ] }
+    },
+    {
+        "id": "portable_generator",
+        "copy-from": "vehicle_generator",
+        "type": "vehicle_part",
+        "name": { "str": "portable generator" },
+        "description": "FIXME TODO UPDATEME",
+        "durability": 250,
+        "power": 9694,
+        "energy_consumption": 15000,
+        "size": 25000,
+        "item": "generator_portable_7500w",
+        "extend": { "flags": [ "FLUIDTANK" ] },
+        "requirements": {
+            "install": { "skills": [ [ "mechanics", 0 ] ], "time": "5 m" },
+            "removal": { "skills": [ [ "mechanics", 0 ] ], "time": "5 m" },
+            "repair": { "skills": [ [ "mechanics", 0 ] ], "time": "5 m" }
+            },
+        "breaks_into": [
+                { "item": "steel_lump", "count": [ 40, 50 ] }
+            ]
+    },
+    {
       "id": "generator_1cyl",
       "copy-from": "engine_1cyl",
       "name": { "str": "small gasoline generator" },
