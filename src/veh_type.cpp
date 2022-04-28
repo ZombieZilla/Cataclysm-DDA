@@ -515,7 +515,7 @@ void vpart_info::load( const JsonObject &jo, const std::string &src )
         def.damage_reduction = load_damage_array( dred );
     }
 
-    if( def.has_flag( "ENGINE" ) ) {
+    if (def.has_flag("ENGINE") || def.has_flag("GENERATOR")) {
         load_engine( def.engine_info, jo, def.fuel_type );
     }
 

@@ -3491,7 +3491,7 @@ int vehicle::consumption_per_hour( const itype_id &ftype, fuel_consumption_data 
 {
     item fuel = item( ftype );
     if( fcd.total_fuel == 0 || fcd.fuel_per_sec.empty() || fuel.has_flag( flag_PERPETUAL ) ||
-        ( !engine_on && !generator_on ) ) {
+        ( !engine_on || !generator_on ) ) {
         return 0;
     }
 

@@ -1,14 +1,16 @@
 [
     {
         "abstract": "vehicle_generator",
-        "copy-from": "gasoline_engine",
+        "copy-from": "engine_combustion",
         "type": "vehicle_part",
+        "fuel_type": "gasoline",
+        "location": "center",
         "categories": [ "energy" ],
         "color": "light_red",
         "symbol": "G",
         "description": "A generator.",
         "extend": { "flags": [ "GENERATOR", "OBSTACLE" ] },
-        "delete": { "flags": [ "E_HIGHER_SKILL", "ENGINE", "E_HEATER", "E_ALTERNATOR" ] }
+        "delete": { "flags": [ "E_HIGHER_SKILL", "ENGINE", "E_ALTERNATOR" ] }
     },
     {
         "id": "portable_generator",
