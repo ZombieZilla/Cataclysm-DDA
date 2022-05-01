@@ -571,7 +571,7 @@ bool vehicle_part::is_fuel_store( bool skip_broke ) const
     if( skip_broke && is_broken() ) {
         return false;
     }
-    return is_tank() || base.is_magazine() || is_reactor();
+    return is_tank() || base.is_magazine() || is_generator() || is_reactor();
 }
 
 bool vehicle_part::is_tank() const

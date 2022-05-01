@@ -1479,7 +1479,7 @@ void veh_interact::calc_overview()
     overview_headers["7_GENERATOR"] = []( const catacurses::window & w, int y ) {
         trim_and_print( w, point( 1, y ), getmaxx( w ) - 2, c_light_gray,
                         string_format( _( "Generators" ) ) );
-        right_print( w, y, 1, c_light_gray, _( "Fuel     Use" ) );
+        right_print( w, y, 1, c_light_gray, _( "Fuel     Qty     Use" ) );
     };
 
     input_event hotkey = main_context.first_unassigned_hotkey( hotkeys );
@@ -1490,7 +1490,7 @@ void veh_interact::calc_overview()
             continue;
         }
 
-        if( vpr.part().is_engine() || vpr.part().is_generator() ) {
+        if( vpr.part().is_engine() ) {
             // if tank contains something then display the contents in milliliters
             auto details = []( const vehicle_part & pt, const catacurses::window & w, int y ) {
                 right_print(
@@ -1511,17 +1511,10 @@ void veh_interact::calc_overview()
                 }
             };
             selectable = is_selectable( vpr.part() );
-            if( vpr.part().is_engine() ) {
-                overview_opts.emplace_back( "1_ENGINE", &vpr.part(), selectable,
-                                            selectable ? next_hotkey( hotkey ) : input_event(),
-                                            details,
-                                            msg_cb );
-            } else {
-                overview_opts.emplace_back( "7_GENERATOR", &vpr.part(), selectable,
-                                            selectable ? next_hotkey( hotkey ) : input_event(),
-                                            details,
-                                            msg_cb );
-            }
+            overview_opts.emplace_back( "1_ENGINE", &vpr.part(), selectable,
+                                        selectable ? next_hotkey( hotkey ) : input_event(),
+                                        details,
+                                        msg_cb );
         }
 
         if( vpr.part().is_tank() || ( vpr.part().is_fuel_store() &&
@@ -1576,12 +1569,12 @@ void veh_interact::calc_overview()
             };
 
             selectable = is_selectable( vpr.part() );
-            if( vpr.part().is_tank() ) {
+            if( vpr.part().is_tank() && !vpr.part().is_generator() ) {
                 overview_opts.emplace_back( "2_TANK", &vpr.part(), selectable, selectable ? next_hotkey(
                                                 hotkey ) : input_event(),
                                             tank_details );
             } else if( vpr.part().is_fuel_store() && !( vpr.part().is_turret() ||
-                       vpr.part().is_battery() || vpr.part().is_reactor() ) ) {
+                       vpr.part().is_battery() || vpr.part().is_generator() || vpr.part().is_reactor() ) ) {
                 overview_opts.emplace_back( "2_TANK", &vpr.part(), selectable, selectable ? next_hotkey(
                                                 hotkey ) : input_event(),
                                             no_tank_details );
@@ -1605,6 +1598,26 @@ void veh_interact::calc_overview()
             selectable = is_selectable( vpr.part() );
             overview_opts.emplace_back( "3_BATTERY", &vpr.part(), selectable,
                                         selectable ? next_hotkey( hotkey ) : input_event(), details );
+        }
+
+        if( vpr.part().is_generator() ) {
+            auto details = []( const vehicle_part & pt, const catacurses::window & w, int y ) {
+                if( pt.ammo_remaining() ) {
+                    // vehicle parts can only have one pocket, and we are showing a liquid,
+                    // which can only be one.
+                    const item &it = pt.base.legacy_front();
+                    std::string fmtstring = "%s  %5.1fL     <color_light_gray>%s</color>";
+                    right_print( w, y, 1, item::find_type( pt.ammo_current() )->color,
+                                 string_format( fmtstring, item::nname( pt.ammo_current() ),
+                                                round_up( units::to_liter( it.volume() ), 1 ),
+                                                right_justify( pt.enabled ? _( "Yes" ) : _( "No" ), 3 ) ) );
+                }
+
+            };
+            selectable = is_selectable( vpr.part() );
+            overview_opts.emplace_back( "7_GENERATOR", &vpr.part(), selectable,
+                                        selectable ? next_hotkey( hotkey ) : input_event(),
+                                        details );
         }
 
         if( vpr.part().is_reactor() || vpr.part().is_turret() ) {
