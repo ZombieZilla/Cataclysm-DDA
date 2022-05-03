@@ -124,6 +124,14 @@ struct smart_controller_config {
     void serialize( JsonOut &json ) const;
 };
 
+struct generator_config {
+    int load_min = 5;
+    int load_max = 90;
+
+    void deserialize(const JsonObject& data);
+    void serialize(JsonOut& json) const;
+};
+
 struct veh_collision {
     //int veh?
     int part  = 0;
@@ -1763,6 +1771,9 @@ class vehicle
         void control_engines( bool for_generators = false );
         // shows ui menu to select an engine or generator
         int select_engine( bool for_generators = false );
+
+        //void manage_generators_ui();
+
         //returns whether the engine is enabled or not, and has fueltype
         bool is_engine_type_on( int e, const itype_id &ft ) const;
         //returns whether the engine or generator is enabled or not
@@ -1957,6 +1968,9 @@ class vehicle
         // SC config. optional, as majority of vehicles don't have SC installed
         cata::optional<smart_controller_config> smart_controller_cfg = cata::nullopt;
         bool has_enabled_smart_controller = false; // NOLINT(cata-serialize)
+
+        cata::optional<generator_config> generator_cfg = cata::nullopt;
+        bool has_enabled_generator_ui = false;
 
         void add_tag( std::string tag );
         bool has_tag( std::string tag ) const;

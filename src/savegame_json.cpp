@@ -3274,6 +3274,22 @@ void smart_controller_config::serialize( JsonOut &json ) const
     json.end_object();
 }
 
+void generator_config::deserialize(const JsonObject& data)
+{
+    data.allow_omitted_members();
+    data.read("load_min", load_min);
+    data.read("load_max", load_max);
+}
+
+
+void generator_config::serialize(JsonOut& json) const
+{
+    json.start_object();
+    json.member("load_min", load_min);
+    json.member("load_max", load_max);
+    json.end_object();
+}
+
 /*
  * Load vehicle from a json blob that might just exceed player in size.
  */

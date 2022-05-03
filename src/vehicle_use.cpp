@@ -22,6 +22,7 @@
 #include "creature_tracker.h"
 #include "debug.h"
 #include "enums.h"
+#include "generator_ui.h"
 #include "game.h"
 #include "iexamine.h"
 #include "input.h"
@@ -498,6 +499,40 @@ int vehicle::select_engine( const bool for_generators )
     return tmenu.ret;
 }
 
+//void vehicle::manage_generators_ui()
+//{
+//    bool valid_option = false;
+//
+//
+//
+//
+//
+//
+//    float genload = 0.0; //between 0.0 and 1.0
+//    int fuel_count = 0;
+//    for (int e : generators) {
+//        fuel_count += part_info(e).engine_fuel_opts().size();
+//    }
+//
+//    const auto adjust_generator = [this](int genload, std::vector<int> generators) {
+//        int i = 0;
+//        for (int e : generators) {
+//            for (const itype_id& fuel : part_info(e).engine_fuel_opts()) {
+//                if (i == genload) {
+//                    if (parts[e].fuel_current() == fuel) {
+//                        toggle_specific_part(e, !is_part_on(e));
+//                    } else {
+//                        parts[e].fuel_set(fuel);
+//                    }
+//                    return;
+//                }
+//                i += 1;
+//            }
+//        }
+//    };
+//
+//}
+
 bool vehicle::interact_vehicle_locked()
 {
     if( !is_locked ) {
@@ -787,9 +822,23 @@ void vehicle::use_controls( const tripoint &pos )
         actions.emplace_back( [&] { control_engines(); refresh(); } );
     }
 
-    if( has_part( "GENERATOR" ) ) {
-        options.emplace_back( _( "Control individual generators" ), keybind( "CONTROL_GENERATORS" ) );
-        actions.emplace_back( [&] { control_engines( true ); refresh(); } );
+    if (has_part("GENERATOR")) {
+        options.emplace_back(_("Control individual generators"), keybind("CONTROL_GENERATORS"));
+        actions.emplace_back([&] {
+            if (!generator_cfg)
+            {
+                generator_cfg = generator_config();
+            }
+
+            generator_ui_settings cfg_view = generator_ui_settings(has_enabled_generator_ui,
+                generator_cfg->load_min, generator_cfg->load_max);
+            generator_ui(cfg_view).control();
+            for (const vpart_reference& vp : get_avail_parts("GENERATOR"))
+            {
+                vp.part().enabled = cfg_view.enabled;
+            }
+            refresh();
+            });
     }
 
     if( has_part( "SMART_ENGINE_CONTROLLER" ) ) {
@@ -801,8 +850,8 @@ void vehicle::use_controls( const tripoint &pos )
                 smart_controller_cfg = smart_controller_config();
             }
 
-            smart_controller_settings cfg_view = smart_controller_settings( has_enabled_smart_controller,
-                    smart_controller_cfg -> battery_lo, smart_controller_cfg -> battery_hi );
+            smart_controller_settings cfg_view = smart_controller_settings(has_enabled_smart_controller,
+                smart_controller_cfg -> battery_lo, smart_controller_cfg -> battery_hi );
             smart_controller_ui( cfg_view ).control();
             for( const vpart_reference &vp : get_avail_parts( "SMART_ENGINE_CONTROLLER" ) )
             {
