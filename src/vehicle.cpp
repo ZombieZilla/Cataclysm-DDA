@@ -3491,7 +3491,7 @@ int vehicle::consumption_per_hour( const itype_id &ftype, fuel_consumption_data 
 {
     item fuel = item( ftype );
     if( fcd.total_fuel == 0 || fcd.fuel_per_sec.empty() || fuel.has_flag( flag_PERPETUAL ) ||
-        ( !engine_on || !generator_on ) ) {
+        ( !engine_on && !generator_on ) ) {
         return 0;
     }
 
@@ -4821,7 +4821,7 @@ bool vehicle::start_engine( int e, bool turn_on, bool for_generators )
     if( turn_on ) {
         toggle_specific_engine( e, true, for_generators );
         // prevent starting of the faulty engines
-        if( ! start_engine( e ) ) {
+        if( ! start_engine( e, for_generators ) ) {
             toggle_specific_engine( e, false, for_generators );
         } else {
             res = true;
@@ -4847,27 +4847,52 @@ int vehicle::total_alternator_epower_w() const
     return epower;
 }
 
+//int vehicle::total_engine_epower_w( const bool for_generators ) const
+//{
+//    const std::vector<int> motors = for_generators ? generators : engines;
+//
+//    int epower = 0;
+//
+//    // Engines: can both produce (plasma) or consume (gas, diesel) epower.
+//    // Gas engines require epower to run for ignition system, ECU, etc.
+//    // Electric motor consumption not included, see @ref vpart_info::energy_consumption
+//    if( ( engine_on && !for_generators ) || ( generator_on && for_generators ) ) {
+//        for( size_t e = 0; e < motors.size(); ++e ) {
+//            if( is_engine_on( e, for_generators ) ) {
+//                epower += part_epower_w( motors[e] );
+//            }
+//        }
+//    }
+//
+//    return epower;
+//}
+
 int vehicle::total_engine_epower_w() const
 {
-    int engines_power = total_engine_epower_w( true );
-    int generators_power = total_engine_epower_w( false );
-    return engines_power + generators_power;
-}
-
-
-int vehicle::total_engine_epower_w( const bool for_generators ) const
-{
-    const std::vector<int> motors = for_generators ? generators : engines;
-
     int epower = 0;
 
     // Engines: can both produce (plasma) or consume (gas, diesel) epower.
     // Gas engines require epower to run for ignition system, ECU, etc.
     // Electric motor consumption not included, see @ref vpart_info::energy_consumption
-    if( ( engine_on && !for_generators ) || ( generator_on && for_generators ) ) {
-        for( size_t e = 0; e < motors.size(); ++e ) {
-            if( is_engine_on( e, for_generators ) ) {
-                epower += part_epower_w( motors[e] );
+    if (engine_on) {
+        for (size_t e = 0; e < engines.size(); ++e) {
+            if (is_engine_on(e, false)) {
+                epower += part_epower_w(engines[e]);
+            }
+        }
+    }
+
+    return epower;
+}
+
+int vehicle::total_generator_epower_w() const
+{
+    int epower = 0;
+
+    if (generator_on) {
+        for (size_t e = 0; e < generators.size(); ++e) {
+            if (is_engine_on(e, true)) {
+                epower += part_epower_w(generators[e]);
             }
         }
     }
@@ -4945,7 +4970,7 @@ int vehicle::total_water_wheel_epower_w() const
 
 int vehicle::net_battery_charge_rate_w() const
 {
-    return total_engine_epower_w() + total_alternator_epower_w() + total_accessory_epower_w() +
+    return total_engine_epower_w() + total_generator_epower_w() + total_alternator_epower_w() + total_accessory_epower_w() +
            total_solar_epower_w() + total_wind_epower_w() + total_water_wheel_epower_w();
 }
 
@@ -4961,7 +4986,7 @@ int vehicle::max_reactor_epower_w() const
 void vehicle::update_alternator_load()
 {
     alternator_load_engines = get_alternator_load( false );
-    alternator_load_generators = get_alternator_load( true );
+    alternator_load_generators = 500;
 }
 
 
@@ -4996,7 +5021,8 @@ void vehicle::power_parts()
     update_alternator_load();
     // Things that drain energy: engines and accessories.
     int engine_epower = total_engine_epower_w();
-    int epower = engine_epower + total_accessory_epower_w() + total_alternator_epower_w();
+    int epower = engine_epower + total_generator_epower_w() + total_accessory_epower_w() +
+                 total_alternator_epower_w();
 
     int delta_energy_bat = power_to_energy_bat( epower, 1_turns );
     int battery_left;
@@ -5214,7 +5240,7 @@ int vehicle::charge_battery( int amount, bool include_other_vehicles )
         int charge_level = iter->first;
         vehicle_part *p = iter->second;
         chargeable_parts.erase( iter );
-        // Calculate number of charges to reach the next %, but insure it's at least
+        // Calculate number of charges to reach the next %, but ensure it's at least
         // one more than current charge.
         int next_charge_level = ( ( charge_level + 1 ) * p->ammo_capacity( ammo_battery ) ) / 100;
         next_charge_level = std::max( next_charge_level, p->ammo_remaining() + 1 );
@@ -5338,9 +5364,10 @@ void vehicle::idle( bool on_map )
 
 void vehicle::idle_fuel_consumption( bool on_map, bool for_generators )
 {
+
     if( ( for_generators ? generator_on : engine_on ) &&
         total_power_w( true, false, for_generators ) > 0 ) {
-        int idle_rate = std::max( 10, ( for_generators ? alternator_load_generators :
+        int idle_rate = std::max( 10, ( for_generators ? generator_cfg->sel_load * 10 :
                                         alternator_load_engines ) ); // minimum idle is 1% of full throttle
 
         if( has_engine_type_not( fuel_type_muscle, true, for_generators ) ) {
@@ -5801,7 +5828,7 @@ void vehicle::refresh()
     accessories.clear();
 
     alternator_load_engines = 0;
-    alternator_load_generators = 0;
+    alternator_load_generators = 500;
     extra_drag = 0;
     all_wheels_on_one_axis = true;
     int first_wheel_y_mount = INT_MAX;

@@ -3274,19 +3274,21 @@ void smart_controller_config::serialize( JsonOut &json ) const
     json.end_object();
 }
 
-void generator_config::deserialize(const JsonObject& data)
+void generator_config::deserialize( const JsonObject &data )
 {
     data.allow_omitted_members();
-    data.read("load_min", load_min);
-    data.read("load_max", load_max);
+    data.read( "enabled", enabled );
+    data.read( "sel_load", sel_load );
+    data.read( "bat_fill", bat_fill );
 }
 
 
-void generator_config::serialize(JsonOut& json) const
+void generator_config::serialize( JsonOut &json ) const
 {
     json.start_object();
-    json.member("load_min", load_min);
-    json.member("load_max", load_max);
+    json.member( "enabled", enabled );
+    json.member( "sel_load", sel_load );
+    json.member( "bat_fill", bat_fill );
     json.end_object();
 }
 
@@ -3387,6 +3389,9 @@ void vehicle::deserialize( const JsonObject &data )
 
     smart_controller_cfg = cata::nullopt;
     data.read( "smart_controller", smart_controller_cfg );
+
+    generator_cfg = cata::nullopt;
+    data.read( "generator_cfg", generator_cfg );
     data.read( "vehicle_noise", vehicle_noise );
 
     // Need to manually backfill the active item cache since the part loader can't call its vehicle.
@@ -3535,6 +3540,7 @@ void vehicle::serialize( JsonOut &json ) const
     json.member( "summon_time_limit", summon_time_limit );
     json.member( "magic", magic );
     json.member( "smart_controller", smart_controller_cfg );
+    json.member( "generator_cfg", generator_cfg );
     json.member( "vehicle_noise", vehicle_noise );
 
     json.end_object();

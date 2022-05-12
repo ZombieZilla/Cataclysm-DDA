@@ -499,40 +499,6 @@ int vehicle::select_engine( const bool for_generators )
     return tmenu.ret;
 }
 
-//void vehicle::manage_generators_ui()
-//{
-//    bool valid_option = false;
-//
-//
-//
-//
-//
-//
-//    float genload = 0.0; //between 0.0 and 1.0
-//    int fuel_count = 0;
-//    for (int e : generators) {
-//        fuel_count += part_info(e).engine_fuel_opts().size();
-//    }
-//
-//    const auto adjust_generator = [this](int genload, std::vector<int> generators) {
-//        int i = 0;
-//        for (int e : generators) {
-//            for (const itype_id& fuel : part_info(e).engine_fuel_opts()) {
-//                if (i == genload) {
-//                    if (parts[e].fuel_current() == fuel) {
-//                        toggle_specific_part(e, !is_part_on(e));
-//                    } else {
-//                        parts[e].fuel_set(fuel);
-//                    }
-//                    return;
-//                }
-//                i += 1;
-//            }
-//        }
-//    };
-//
-//}
-
 bool vehicle::interact_vehicle_locked()
 {
     if( !is_locked ) {
@@ -830,13 +796,27 @@ void vehicle::use_controls( const tripoint &pos )
                 generator_cfg = generator_config();
             }
 
-            generator_ui_settings cfg_view = generator_ui_settings(has_enabled_generator_ui,
-                generator_cfg->load_min, generator_cfg->load_max);
-            generator_ui(cfg_view).control();
+            generator_ui_settings current_gen_set = generator_ui_settings(generator_cfg->enabled,
+                generator_cfg->sel_load, generator_cfg->bat_fill);
+            generator_ui(current_gen_set).control();
+                for (size_t e = 0; e < generators.size(); ++e)
+                {
+                    if (current_gen_set.enabled)
+                    {
+                        start_engines(false, false, true);
+                        generator_on = true;
+                    }
+                    if (!current_gen_set.enabled) {
+                        start_engine(e, false, true);
+                        generator_on = false;
+                    }
+            }
+
             for (const vpart_reference& vp : get_avail_parts("GENERATOR"))
             {
-                vp.part().enabled = cfg_view.enabled;
+                vp.part().enabled = current_gen_set.enabled;
             }
+
             refresh();
             });
     }

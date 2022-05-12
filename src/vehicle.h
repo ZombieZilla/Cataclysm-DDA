@@ -125,11 +125,12 @@ struct smart_controller_config {
 };
 
 struct generator_config {
-    int load_min = 5;
-    int load_max = 90;
+    bool enabled = false;
+    int sel_load = 5;
+    int bat_fill = 50;
 
-    void deserialize(const JsonObject& data);
-    void serialize(JsonOut& json) const;
+    void deserialize( const JsonObject &data );
+    void serialize( JsonOut &json ) const;
 };
 
 struct veh_collision {
@@ -1266,7 +1267,8 @@ class vehicle
 
         // Total drain or production of electrical power from engines.
         int total_engine_epower_w() const;
-        int total_engine_epower_w( bool for_generators ) const;
+        // Total production of electrical power from generators.
+        int total_generator_epower_w() const;
         // Total production of electrical power from alternators.
         int total_alternator_epower_w() const;
         // Total power currently being produced by all solar panels.
@@ -1772,8 +1774,6 @@ class vehicle
         // shows ui menu to select an engine or generator
         int select_engine( bool for_generators = false );
 
-        //void manage_generators_ui();
-
         //returns whether the engine is enabled or not, and has fueltype
         bool is_engine_type_on( int e, const itype_id &ft ) const;
         //returns whether the engine or generator is enabled or not
@@ -1968,9 +1968,9 @@ class vehicle
         // SC config. optional, as majority of vehicles don't have SC installed
         cata::optional<smart_controller_config> smart_controller_cfg = cata::nullopt;
         bool has_enabled_smart_controller = false; // NOLINT(cata-serialize)
-
+        // Generator config. optional, as majority of vehicles don't have a generator installed
         cata::optional<generator_config> generator_cfg = cata::nullopt;
-        bool has_enabled_generator_ui = false;
+
 
         void add_tag( std::string tag );
         bool has_tag( std::string tag ) const;
